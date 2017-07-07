@@ -8,3 +8,4 @@ picked from the input data and the summarized by the attributes subject and the 
 
 There were 561 feature variables in the input files out of which only 66 were retained in the output dataset.
 
+A Code book detailing the data produced in the output has been added.
