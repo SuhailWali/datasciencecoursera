@@ -17,6 +17,7 @@ library(dplyr)
 # read file with activity labels
 
 activity_labels  <- fread("./activity_labels.txt")
+colnames(activity_labels) <- c("ActivityLabelId","Activity_label")
 
 # read train datsets - from the main train dataset, select only relevant columns (columns with mean and Sd)
 # also rename the column names for the narrow data frames
@@ -27,16 +28,16 @@ colnames(subject_train) <- "SubjectId"
 x_train <- fread("./train/X_train.txt")
 x_train <- x_train[,c(1:6,41:46,81:86,121:126,161:166,201:202,214:215,227:228,240:241,253:254,266:271,345:350,424:429
                       ,503:504,516:517,529:530,542:543)]
-
-
 y_train <- fread("./train/y_train.txt")
-# Add activity labels to the train data
-y_train <- merge(x=y_train,y=activity_labels)
-y_train$V1 <-NULL
-colnames(y_train) <- "Activity_label"
+colnames(y_train) <- "ActivityId"
 
 #combine the train dataset parts
 train <- cbind(subject_train,y_train,x_train)
+
+# Add activity labels to the train data
+train <- merge(x=train,y=activity_labels,by.x='ActivityId', by.y='ActivityLabelId',all=TRUE)
+y_train$ActivityId <-NULL
+
 
 
 # read test datsets - from the main test dataset, select only relevant columns (columns with mean and Sd)
@@ -50,14 +51,16 @@ x_test <- x_test[,c(1:6,41:46,81:86,121:126,161:166,201:202,214:215,227:228,240:
                       ,503:504,516:517,529:530,542:543)]
 
 y_test <- fread("./test/y_test.txt")
-# Add activity labels to the train data
-y_test <- merge(x=y_test,y=activity_labels)
-y_test$V1 <-NULL
-colnames(y_test) <- "Activity_label"
+colnames(y_test) <- "ActivityId"
 
-
-#combine the test dataset parts
+#combine the train dataset parts
 test <- cbind(subject_test,y_test,x_test)
+
+# Add activity labels to the train data
+test <- merge(x=test,y=activity_labels,by.x='ActivityId', by.y='ActivityLabelId',all=TRUE)
+y_test$ActivityId <-NULL
+
+
 
 
 #Create one dataset with a list of all observations
