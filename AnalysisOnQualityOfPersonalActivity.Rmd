@@ -1,0 +1,160 @@
+---
+title: "Analysis on Quality of Personal Activity"
+author: "Suhail Wali"
+date: "22 November 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE, fig.height=8, fig.width=8}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE,message=FALSE)
+```
+
+
+
+# Introduction
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this report, we will try to predict the quality(manner) of exercise using the data[1] collected from the from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways:
+
+Class A - Exactly according to Specification
+
+Class B - Throwing the elbows ot the front
+
+Class C - Lifting the dumbells only halfway
+
+Class D - Lowering the dumbells only halfway
+
+Class E - Throwing the hips to the front
+
+
+As part of the process in building a prediction model to predict the manner of the exercise done by the participants, we will describe the steps we took in building the model, the assumptions we took, the observations we made and the 
+choices we had to make and the impact of all these.
+
+## Data
+
+```{r echo=FALSE, results='hide'}
+library(ggplot2)
+library(corrplot)
+library(caret)
+set.seed(153)
+
+traindata <- read.csv("pml-training.csv",stringsAsFactors = FALSE)
+
+inTrain <- createDataPartition(traindata$classe, p=3/4)[[1]]
+
+analysisvars <- grep('^roll|^pitch|^yaw', names(traindata), value=TRUE)
+
+trainset <- traindata[inTrain,c("classe",analysisvars)]
+validationset <- traindata[-inTrain,c("classe",analysisvars)]
+
+```
+
+We will divide the data provided into two parts: training and validation. The validation set will be used to calculate Out of Sample(OOS) error. The input dataset overall has `r nrow(traindata)` observations and `r ncol(traindata)` variables[2]. However, for this analysis we have chosen to use only the following variables as predictors: `r analysisvars`. The train and validation sets have `r nrow(trainset)` and `r nrow(validationset)` observations respectively. The response variable is 'classe'. 
+
+
+## Data Exploration
+
+We start with some exploration of the data to understand the relationships within the data. Here is a quick summary of the data(entire dataset).
+.
+```{r echo=FALSE}
+summary(traindata[,c("classe",analysisvars)])
+```
+
+We can see that none of the predictors have a missing value which is good. Let's see the distribution of the response variable in the data.
+
+```{r echo=FALSE}
+barplot(table(traindata$classe), main="distribution of exercise classes")
+```
+
+The data seems fairly evenly distributed. The pair-wise correlation plot of the predictor variables shows that there are a couple of medium correlations(yaw_dumbell-pitch_belt, yaw_belt-pitch_belt) and a strong one(yaw_belt-roll_belt).
+
+```{r echo=FALSE}
+corr_mat <- cor(traindata[,analysisvars])
+corrplot(corr_mat)
+```
+
+
+## Modelling
+
+Since the problem in consideration is one of classification, we will attempt building two models, one based on bagging, i.e. a random forest, and the other based on boosting, i.e. a gradient boosted machine. Here are the details on how the models will be built.
+
+
+### Random Forest(Bagging)
+
+We will start with training a random forest model to predict our class. Random forests are generally robust to multicollinearity and handle missing values well, although in our case there are no missing values to worry about. We will use 'caret' package to train and tune our model. For the model, we will use a 5 fold cross validation with all other settings set to default.
+
+```{r echo=FALSE }
+myControl <- trainControl(method="cv", number=5, verboseIter=FALSE)
+model_rf <- train(classe ~ ., method="rf", data=trainset, trControl=myControl,verbose=F)
+```
+
+Here we present the model summary.
+```{r echo=FALSE}
+model_rf
+model_rf$finalModel
+```
+
+The model statistics suggest that the best model has an accuracy of around 98% on training data with an OOB cross validation error rate of less than 1% when 5 fold cross-validation was used. The model chosen as the best one used only `r model_rf$finalModel$mtry` variables. The variables in order of their importance to the model are:
+
+```{r echo=FALSE}
+varImpPlot(model_rf$finalModel)
+```
+
+### GBM(Boosting)
+
+The next model we will train is a gradient boosted machine. GBM models are also fairly robust to multicollinearity and missing values. We will use the 'caret' package to train and tune the model. We have chosen a 5-fold cross validation with a shrinkage of .01. 
+
+```{r echo=FALSE }
+
+myControl <- trainControl(method="cv", number=5, verboseIter=FALSE)
+myGrid <- expand.grid(interaction.depth = 3,  n.trees=2000, shrinkage=.01, n.minobsinnode=100 )
+model_gbm <- train(classe ~ ., data = trainset, distribution ="multinomial", method="gbm", bag.fraction=.75,
+                 trControl=myControl,verbose=FALSE,tuneGrid = myGrid)
+
+model_gbm
+```
+
+The variables in order of their importance to the model are:
+
+```{r echo=FALSE}
+varImp(model_gbm$finalModel)
+```
+
+
+## Model Evaluation
+
+We have trained the models. We will now evaluate the models on unseen data and generate and estimate of OOS error. Here we present the output of model fit on validation set.
+
+Random Forest evaluation
+
+```{r echo=FALSE}
+rfpred <- predict(model_rf, validationset)
+confusionMatrix(validationset$classe,rfpred)
+```
+
+GBM evaluation
+
+```{r echo=FALSE}
+gbmpred <- predict(model_gbm, validationset)
+confusionMatrix(validationset$classe,gbmpred)
+```
+
+
+## Conclusion
+
+From the above results, it is evident that the Random forest model performed better than the gbm model on the validation data we used for evaluation. However, it does not necessarily mean that the random forest is better than a gbm. It is possible that with a little tuning, we may be able to achieve similar or even better results using the GBM.
+Although, we will not be doing that in this report. We now come to the end of this exercise(No pun intended!)
+
+
+
+
+## Appendix
+[1] The data used in the analysis came from this source http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har
+
+[2] Details of the variables in the input dataset 
+```{r echo=FALSE} 
+str(traindata, list.len=199)
+```
+
+
+
+
