@@ -1,0 +1,59 @@
+---
+title: "Australia's Major Airports"
+author: "Suhail Wali"
+date: "5 February 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+The following interactive map shows major airports of Australia with links to information about these airports and the cities in which these airports exist.
+
+```{r echo=FALSE,message=FALSE}
+# Create latlongs for the major airports
+lat <- c(-27.3942, -12.4112, -33.9399, -37.6690, -34.9462, -42.8364, -31.9385)
+lng <- c(153.1218, 130.8775, 151.1753, 144.8410, 138.5332, 147.5075, 115.9672)
+airport <- c("Brisbane Airport", "Darwin Airport", "Sydney Airport ", "Melbourne Airport ", "Adelaide Airport",
+             "Hobart Airport", "Perth Airport")
+
+
+# Create web references for the airports
+airportsites <- c(
+  "<a href='http://www.bne.com.au/'> Briabane Airport</a> <br> 
+  <a href='https://en.wikipedia.org/wiki/Brisbane'> Brisbane, Queensland</a></br>",
+  
+  "<a href='http://www.darwinairport.com.au/'> Darwin Airport</a> <br> 
+  <a href='https://en.wikipedia.org/wiki/Darwin,_Northern_Territory'> Darwin, Northern Territory</a></br>",
+  
+  "<a href='http://www.sydneyairport.com.au/'> Sydney Airport</a> <br> 
+  <a href='https://en.wikipedia.org/wiki/Sydney'> Sydney, New South Wales</a></br>",
+  
+  "<a href='http://www.melbourneairport.com.au/'> Melbourne Airport</a> <br> 
+  <a href='https://en.wikipedia.org/wiki/Melbourne'> Melbourne, Victoria</a></br>",
+  
+  "<a href='http://www.adelaideairport.com.au/'> Adelaide Airport</a> <br> 
+  <a href='https://en.wikipedia.org/wiki/Adelaide'> Adelaide, South Australia</a></br>",
+  
+  "<a href='http://www.hobartairport.com.au/'> Hobart Airport</a> <br> 
+  <a href='https://en.wikipedia.org/wiki/Hobart'> Hobart, Tasmania</a></br>",
+  
+  "<a href='http://www.perthairport.com.au/'> Perth Airport</a> <br> 
+  <a href='https://en.wikipedia.org/wiki/Perth'> Perth, Western Australia</a></br>"
+
+)
+
+airportlatlng <- data.frame(airport=airport, lat=lat,lng=lng)
+
+library(leaflet)
+
+airportlatlng %>%
+  leaflet() %>%
+  addTiles() %>%
+  addMarkers(lat=lat, lng=lng, popup = airportsites)
+
+```
+
